@@ -1,0 +1,18 @@
+{
+  "name": "iam-vector-test",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node seed/seedData.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "express": "^4.18.0",
+    "groq-sdk": "^1.2.0",
+    "mongodb": "^6.0.0"
+  }
+}

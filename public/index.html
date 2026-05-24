@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iAM Vector Test</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sidebar-bg: #0f1117;
+    --sidebar-border: #1e2130;
+    --main-bg: #f8f9fc;
+    --card-bg: #ffffff;
+    --text: #1a1d2e;
+    --text-muted: #6b7280;
+    --accent: #6366f1;
+    --border: #e5e7eb;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --green-bg: #d1fae5;
+    --amber-bg: #fef3c7;
+    --red-bg: #fee2e2;
+    --sidebar-w: 260px;
+    --topbar-h: 52px;
+  }
+
+  html {
+    height: 100%;
+  }
+
+  body {
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--main-bg);
+    color: var(--text);
+  }
+
+  /* ════════════════════════════════════════
+     TOP BAR  (mobile only — hidden on desktop)
+  ════════════════════════════════════════ */
+  #topbar {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--topbar-h);
+    background: var(--sidebar-bg);
+    border-bottom: 1px solid var(--sidebar-border);
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    z-index: 200;
+  }
+  #menuBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #e5e7eb;
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  #menuBtn span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: currentColor;
+    border-radius: 2px;
+    transition: transform 0.2s, opacity 0.2s;
+  }
+  #menuBtn.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  #menuBtn.open span:nth-child(2) { opacity: 0; }
+  #menuBtn.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  #topbarTitle { color: #fff; font-size: 14px; font-weight: 700; flex: 1; }
+  #topbarTitle span { color: var(--accent); }
+  #topbarUser {
+    font-size: 11px;
+    color: #4ade80;
+    background: #1a2a1e;
+    border: 1px solid #1f4d2b;
+    padding: 4px 8px;
+    border-radius: 100px;
+    white-space: nowrap;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ════════════════════════════════════════
+     OVERLAY  (mobile sidebar backdrop)
+  ════════════════════════════════════════ */
+  #overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 150;
+    backdrop-filter: blur(2px);
+  }
+  #overlay.visible { display: block; }
+
+  /* ════════════════════════════════════════
+     LAYOUT SHELL
+  ════════════════════════════════════════ */
+  #shell {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ════════════════════════════════════════
+     SIDEBAR
+  ════════════════════════════════════════ */
+  #sidebar {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+    display: flex;
+    flex-direction: column;
+    padding: 0 16px 20px;
+    gap: 0;
+    overflow-y: auto;
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+    z-index: 160;
+  }
+
+  #sidebarHeader {
+    padding: 20px 0 20px;
+    border-bottom: 1px solid var(--sidebar-border);
+    margin-bottom: 20px;
+    flex-shrink: 0;
+  }
+
+  .sidebar-section { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+
+  #sidebar h1 { color: #fff; font-size: 15px; font-weight: 700; letter-spacing: 0.03em; }
+  #sidebar h1 span { color: var(--accent); }
+
+  .sidebar-label { color: #6b7280; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  #userSelect, #customUserInput, #factCategory {
+    background: #1a1d2e;
+    border: 1px solid #2d3148;
+    color: #e5e7eb;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    width: 100%;
+  }
+  #userSelect { cursor: pointer; }
+  #customUserInput { display: none; margin-top: 4px; }
+  #customUserInput::placeholder { color: #4b5563; }
+  #userSelect:focus, #customUserInput:focus { outline: 2px solid var(--accent); }
+
+  #privacyBadge {
+    background: #1a2a1e;
+    border: 1px solid #1f4d2b;
+    color: #4ade80;
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  #addFactToggle {
+    background: none;
+    border: 1px dashed #2d3148;
+    color: #9ca3af;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  #addFactToggle:hover { border-color: var(--accent); color: #c7d2fe; }
+
+  #addFactForm { display: none; flex-direction: column; gap: 8px; }
+  #addFactForm.open { display: flex; }
+
+  #factText {
+    background: #1a1d2e;
+    border: 1px solid #2d3148;
+    color: #e5e7eb;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    width: 100%;
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+  }
+  #factText::placeholder { color: #4b5563; }
+  #factText:focus { outline: 2px solid var(--accent); }
+
+  /* ════════════════════════════════════════
+     BUTTONS
+  ════════════════════════════════════════ */
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .btn-primary:hover:not(:disabled) { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-secondary {
+    background: #f3f4f6;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .btn-secondary:hover:not(:disabled) { background: #e5e7eb; }
+  .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ════════════════════════════════════════
+     MAIN CONTENT
+  ════════════════════════════════════════ */
+  #main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+  }
+
+  /* constrain content width on very wide screens */
+  #main > * {
+    max-width: 900px;
+    width: 100%;
+  }
+
+  /* ════════════════════════════════════════
+     STEP CARDS
+  ════════════════════════════════════════ */
+  .step-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    background: #fafbff;
+    flex-wrap: wrap;
+  }
+
+  .step-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .step-title { font-size: 14px; font-weight: 600; flex: 1; min-width: 80px; }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 100px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .badge-green { background: var(--green-bg); color: #065f46; }
+  .badge-amber { background: var(--amber-bg); color: #92400e; }
+  .badge-grey  { background: #f3f4f6; color: #6b7280; }
+
+  .step-body { padding: 18px; }
+
+  /* ════════════════════════════════════════
+     FACT CARDS
+  ════════════════════════════════════════ */
+  .fact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .fact-list::-webkit-scrollbar { width: 4px; }
+  .fact-list::-webkit-scrollbar-track { background: transparent; }
+  .fact-list::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+  .fact-list::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+  .fact-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    position: relative;
+    transition: border-color 0.15s;
+  }
+  .fact-card:hover { border-color: #c7d2fe; }
+
+  .fact-text { font-size: 13px; line-height: 1.55; flex: 1; min-width: 0; word-break: break-word; }
+
+  .fact-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+
+  .cat-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .cat-thought    { background: #ede9fe; color: #5b21b6; }
+  .cat-belief     { background: #dbeafe; color: #1e40af; }
+  .cat-preference { background: #fce7f3; color: #9d174d; }
+  .cat-story      { background: #dcfce7; color: #166534; }
+  .cat-fact       { background: #f1f5f9; color: #475569; }
+
+  .embed-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .embed-done    { background: var(--green-bg); color: #065f46; }
+  .embed-pending { background: #f3f4f6; color: #6b7280; }
+
+  .delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9ca3af;
+    font-size: 18px;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+    /* hidden on desktop, always visible on touch */
+    opacity: 0;
+    transition: color 0.15s, opacity 0.15s;
+  }
+  .fact-card:hover .delete-btn { opacity: 1; }
+  .delete-btn:hover { color: var(--red); }
+
+  /* always show delete on touch devices */
+  @media (hover: none) {
+    .delete-btn { opacity: 0.4; }
+    .delete-btn:active { color: var(--red); opacity: 1; }
+  }
+
+  /* ════════════════════════════════════════
+     MISC COMPONENTS
+  ════════════════════════════════════════ */
+  .facts-summary {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    line-height: 1.6;
+  }
+  .facts-summary strong { color: var(--text); }
+
+  .progress-wrap { margin: 12px 0; }
+  .progress-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .progress-track {
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 100px;
+    transition: width 0.3s ease;
+  }
+
+  .action-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+
+  .inline-msg { font-size: 12px; color: var(--text-muted); }
+  .inline-msg.success { color: var(--green); }
+  .inline-msg.error   { color: var(--red); }
+
+  /* ════════════════════════════════════════
+     SEARCH
+  ════════════════════════════════════════ */
+  .search-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  #queryInput {
+    flex: 1;
+    min-width: 180px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+    background: #fff;
+  }
+  #queryInput:focus { border-color: var(--accent); }
+
+  /* ════════════════════════════════════════
+     VECTOR RESULTS
+  ════════════════════════════════════════ */
+  .results-section { margin-top: 16px; }
+  #vectorCards {
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  #vectorCards::-webkit-scrollbar { width: 4px; }
+  #vectorCards::-webkit-scrollbar-track { background: transparent; }
+  #vectorCards::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+  #vectorCards::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+  .results-subtitle {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .vector-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .sim-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 100px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .sim-high { background: var(--green-bg); color: #065f46; }
+  .sim-mid  { background: var(--amber-bg); color: #92400e; }
+  .sim-low  { background: var(--red-bg);   color: #991b1b; }
+  .vector-text { font-size: 13px; flex: 1; line-height: 1.55; min-width: 120px; word-break: break-word; }
+
+  /* ════════════════════════════════════════
+     GENIE CARD
+  ════════════════════════════════════════ */
+  .genie-card {
+    background: #f5f3ff;
+    border: 1px solid #c4b5fd;
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-top: 16px;
+  }
+  .genie-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6d28d9;
+    margin-bottom: 10px;
+  }
+  .genie-text { font-size: 14px; line-height: 1.65; color: #3730a3; }
+  .genie-note { font-size: 11px; color: #7c3aed; margin-top: 10px; opacity: 0.7; }
+
+  /* ════════════════════════════════════════
+     SPINNER / LOADING
+  ════════════════════════════════════════ */
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(99,102,241,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-msg {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 8px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 28px 16px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  /* ════════════════════════════════════════
+     VISIBILITY TOGGLE
+  ════════════════════════════════════════ */
+  .visibility-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    color: var(--text-muted);
+  }
+  .visibility-btn:hover { border-color: #9ca3af; color: var(--text); }
+  .visibility-btn.is-public {
+    background: var(--green-bg);
+    border-color: #6ee7b7;
+    color: #065f46;
+  }
+  .visibility-btn.is-public:hover {
+    background: #a7f3d0;
+  }
+
+  /* ════════════════════════════════════════
+     ASK ABOUT ROW (Step 3)
+  ════════════════════════════════════════ */
+  .ask-about-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .ask-about-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  #targetUserInput {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    width: 140px;
+    transition: border-color 0.15s;
+    background: #fff;
+  }
+  #targetUserInput:focus { border-color: var(--accent); }
+  .cross-user-banner {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: #ecfdf5;
+    border: 1px solid #6ee7b7;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #065f46;
+    margin-bottom: 12px;
+  }
+  .cross-user-banner.visible { display: flex; }
+
+  /* ════════════════════════════════════════
+     RESPONSIVE — TABLET  ≤ 900px
+  ════════════════════════════════════════ */
+  @media (max-width: 900px) {
+    :root { --sidebar-w: 220px; }
+    #main { padding: 20px 20px; }
+  }
+
+  /* ════════════════════════════════════════
+     RESPONSIVE — MOBILE  ≤ 680px
+  ════════════════════════════════════════ */
+  @media (max-width: 680px) {
+    #topbar { display: flex; }
+    #sidebarHeader { display: none; }
+
+    /* body must scroll on mobile */
+    body { overflow: auto; }
+
+    #shell {
+      display: block;
+      height: auto;
+      overflow: visible;
+    }
+
+    #sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: min(var(--sidebar-w), 85vw);
+      min-width: 0;
+      transform: translateX(-110%);
+      padding-top: 20px;
+      z-index: 160;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+    }
+    #sidebar.open { transform: translateX(0); }
+
+    #main {
+      padding: calc(var(--topbar-h) + 16px) 14px 24px;
+      overflow-y: visible;
+      height: auto;
+      gap: 16px;
+    }
+    #main > * { max-width: 100%; }
+
+    .fact-list { max-height: none; }
+    #vectorCards { max-height: none; }
+    .fact-card { flex-wrap: wrap; }
+    .fact-meta { flex-direction: row; align-items: center; width: 100%; justify-content: flex-start; }
+
+    .search-row { flex-direction: column; }
+    #queryInput { min-width: 0; width: 100%; }
+    #askBtn { width: 100%; }
+
+    .vector-card { flex-direction: column; gap: 8px; }
+    .vector-card .cat-badge { align-self: flex-start; }
+
+    .step-body { padding: 14px; }
+    .step-header { padding: 12px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Top bar (mobile only) ── -->
+<div id="topbar">
+  <button id="menuBtn" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div id="topbarTitle">iAM <span>Vector</span></div>
+  <div id="topbarUser">alice</div>
+</div>
+
+<!-- ── Sidebar overlay ── -->
+<div id="overlay"></div>
+
+<!-- ── Layout shell ── -->
+<div id="shell">
+
+  <!-- ── Sidebar ── -->
+  <aside id="sidebar">
+    <div id="sidebarHeader">
+      <h1>iAM <span>Vector</span> Test</h1>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Active User</div>
+      <select id="userSelect">
+        <option value="alice">alice</option>
+        <option value="maaz">maaz</option>
+        <option value="gilson">gilson</option>
+        <option value="__custom__">Custom…</option>
+      </select>
+      <input id="customUserInput" type="text" placeholder="Enter userId…">
+      <div id="privacyBadge">🔒 Viewing: <strong id="privacyUser">alice</strong>'s data only</div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Add a Fact</div>
+      <button id="addFactToggle">+ Add fact…</button>
+      <div id="addFactForm">
+        <textarea id="factText" placeholder="Enter a fact, belief, preference…" maxlength="2000"></textarea>
+        <select id="factCategory">
+          <option value="fact">fact</option>
+          <option value="belief">belief</option>
+          <option value="thought">thought</option>
+          <option value="preference">preference</option>
+          <option value="story">story</option>
+        </select>
+        <button class="btn-primary" id="addFactBtn">Add Fact</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main content ── -->
+  <main id="main">
+
+    <!-- Step 1 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div class="step-title">Raw Data</div>
+        <span class="badge badge-grey" id="step1Badge">LOADING</span>
+      </div>
+      <div class="step-body">
+        <div class="facts-summary" id="factsSummary"></div>
+        <div class="fact-list" id="factList"></div>
+        <div class="action-row">
+          <button class="btn-secondary" id="seedBtn">Load Seed Data</button>
+          <span class="inline-msg" id="seedMsg"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div class="step-title">Push to Vector</div>
+        <span class="badge badge-grey" id="step2Badge">NONE YET</span>
+      </div>
+      <div class="step-body" id="step2Body">
+        <div class="empty-state">No facts yet. Add some in Step 1 or load seed data.</div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div class="step-title">Search + Genie</div>
+        <span class="badge badge-amber" id="step3Badge">EMBED FIRST</span>
+      </div>
+      <div class="step-body">
+        <div class="ask-about-row">
+          <span class="ask-about-label">Ask about:</span>
+          <input id="targetUserInput" type="text" placeholder="userId…" value="alice">
+        </div>
+        <div class="cross-user-banner" id="crossUserBanner">
+          🌐 Searching <strong id="crossUserName"></strong>'s public stage only
+        </div>
+        <div class="search-row">
+          <input id="queryInput" type="text" placeholder="Ask anything about alice…">
+          <button class="btn-primary" id="askBtn" disabled>Ask Genie</button>
+        </div>
+        <div id="searchLoading" style="display:none" class="loading-msg">
+          <span class="spinner"></span> Searching vectors and generating response…
+        </div>
+        <div id="searchError" class="inline-msg error" style="display:none"></div>
+        <div id="searchResults" style="display:none">
+          <div class="results-section">
+            <div class="results-subtitle" id="vectorSubtitle">Semantic matches</div>
+            <div id="vectorCards"></div>
+          </div>
+          <div class="genie-card">
+            <div class="genie-header">⟡ Genie Response</div>
+            <div class="genie-text" id="genieText"></div>
+            <div class="genie-note" id="genieNote"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div><!-- end #shell -->
+
+<script>
+  let currentUser = 'alice';
+  let facts = [];
+  let embedEventSource = null;
+
+  // ── Mobile sidebar ──
+  const sidebar  = document.getElementById('sidebar');
+  const overlay  = document.getElementById('overlay');
+  const menuBtn  = document.getElementById('menuBtn');
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    overlay.classList.add('visible');
+    menuBtn.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('visible');
+    menuBtn.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  menuBtn.addEventListener('click', () => sidebar.classList.contains('open') ? closeSidebar() : openSidebar());
+  overlay.addEventListener('click', closeSidebar);
+
+  // ── User selector ──
+  const userSelect  = document.getElementById('userSelect');
+  const customInput = document.getElementById('customUserInput');
+  const privacyUser = document.getElementById('privacyUser');
+  const topbarUser  = document.getElementById('topbarUser');
+
+  userSelect.addEventListener('change', () => {
+    if (userSelect.value === '__custom__') {
+      customInput.style.display = 'block';
+      customInput.focus();
+    } else {
+      customInput.style.display = 'none';
+      setUser(userSelect.value);
+    }
+  });
+
+  customInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && customInput.value.trim()) {
+      setUser(customInput.value.trim());
+      closeSidebar();
+    }
+  });
+
+  function setUser(uid) {
+    currentUser = uid;
+    privacyUser.textContent = uid;
+    topbarUser.textContent = uid;
+    document.getElementById('queryInput').placeholder = `Ask anything about ${uid}…`;
+    document.getElementById('targetUserInput').value = uid;
+    updateCrossUserBanner();
+    resetResults();
+    loadFacts();
+  }
+
+  // ── Add fact form ──
+  document.getElementById('addFactToggle').addEventListener('click', () => {
+    document.getElementById('addFactForm').classList.toggle('open');
+  });
+  document.getElementById('addFactBtn').addEventListener('click', addFact);
+
+  async function addFact() {
+    const text = document.getElementById('factText').value.trim();
+    const category = document.getElementById('factCategory').value;
+    if (!text) return;
+    try {
+      const res = await fetch('/api/facts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser, text, category }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      document.getElementById('factText').value = '';
+      document.getElementById('addFactForm').classList.remove('open');
+      closeSidebar();
+      await loadFacts();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  // ── Load facts ──
+  async function loadFacts() {
+    try {
+      const res = await fetch(`/api/facts?userId=${encodeURIComponent(currentUser)}`);
+      facts = await res.json();
+      renderFacts();
+      renderStep2();
+    } catch (err) {
+      document.getElementById('factsSummary').textContent = 'Failed to load facts.';
+    }
+  }
+
+  function renderFacts() {
+    const list    = document.getElementById('factList');
+    const summary = document.getElementById('factsSummary');
+    const badge   = document.getElementById('step1Badge');
+
+    if (!facts.length) {
+      list.innerHTML = '';
+      summary.textContent = `No facts for ${currentUser} yet.`;
+      badge.textContent = 'EMPTY';
+      badge.className = 'badge badge-grey';
+      return;
+    }
+
+    const vectorised = facts.filter(f => f.embeddingStatus === 'embedded').length;
+    const pending    = facts.length - vectorised;
+    summary.innerHTML = `<strong>${facts.length} facts</strong> for ${currentUser} &nbsp;·&nbsp; ${vectorised} vectorised &nbsp;·&nbsp; ${pending} pending`;
+    badge.textContent = 'LOADED';
+    badge.className = 'badge badge-green';
+
+    list.innerHTML = facts.map(f => `
+      <div class="fact-card" id="fact-${f._id}">
+        <div class="fact-text">${escHtml(f.text)}</div>
+        <div class="fact-meta">
+          <span class="cat-badge cat-${f.category}">${f.category}</span>
+          <span class="embed-badge ${f.embeddingStatus === 'embedded' ? 'embed-done' : 'embed-pending'}" id="embed-badge-${f._id}">
+            ${f.embeddingStatus === 'embedded' ? '✓ vectorised' : '· pending'}
+          </span>
+          <button class="visibility-btn ${f.isPublic ? 'is-public' : ''}"
+                  onclick="togglePublic('${f._id}', ${!!f.isPublic})"
+                  title="${f.isPublic ? 'Click to make private' : 'Click to make public'}">
+            ${f.isPublic ? '🌐 public' : '🔒 private'}
+          </button>
+        </div>
+        <button class="delete-btn" onclick="deleteFact('${f._id}')" title="Delete">×</button>
+      </div>
+    `).join('');
+  }
+
+  async function deleteFact(id) {
+    try {
+      const res = await fetch(`/api/facts/${id}?userId=${encodeURIComponent(currentUser)}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).error);
+      await loadFacts();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function togglePublic(id, currentlyPublic) {
+    try {
+      const res = await fetch(`/api/facts/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser, isPublic: !currentlyPublic }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      // optimistic update on the button itself
+      const btn = document.querySelector(`#fact-${id} .visibility-btn`);
+      const newPublic = !currentlyPublic;
+      if (btn) {
+        btn.textContent = newPublic ? '🌐 public' : '🔒 private';
+        btn.title = newPublic ? 'Click to make private' : 'Click to make public';
+        btn.classList.toggle('is-public', newPublic);
+        btn.onclick = () => togglePublic(id, newPublic);
+      }
+      // update local facts array too
+      const f = facts.find(f => f._id === id);
+      if (f) f.isPublic = newPublic;
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  // ── Step 2 ──
+  function renderStep2() {
+    const body       = document.getElementById('step2Body');
+    const badge      = document.getElementById('step2Badge');
+    const askBtn     = document.getElementById('askBtn');
+    const step3Badge = document.getElementById('step3Badge');
+
+    if (!facts.length) {
+      body.innerHTML = `<div class="empty-state">No facts yet. Add some in Step 1 or load seed data.</div>`;
+      badge.textContent = 'NONE YET';
+      badge.className = 'badge badge-grey';
+      askBtn.disabled = true;
+      step3Badge.textContent = 'EMBED FIRST';
+      step3Badge.className = 'badge badge-amber';
+      return;
+    }
+
+    const total    = facts.length;
+    const embedded = facts.filter(f => f.embeddingStatus === 'embedded').length;
+    const pending  = total - embedded;
+
+    if (pending === 0) {
+      badge.textContent = 'ALL EMBEDDED';
+      badge.className = 'badge badge-green';
+      body.innerHTML = `
+        <div style="font-size:13px;color:#065f46;">✓ All ${total} facts are vectorised</div>
+        <div class="action-row">
+          <button class="btn-secondary" disabled>Embed All Pending Facts</button>
+          <span class="inline-msg success">Nothing left to embed.</span>
+        </div>`;
+      askBtn.disabled = false;
+      step3Badge.textContent = 'READY';
+      step3Badge.className = 'badge badge-green';
+      return;
+    }
+
+    badge.textContent = `${pending} PENDING`;
+    badge.className = 'badge badge-amber';
+    askBtn.disabled = true;
+    step3Badge.textContent = 'EMBED FIRST';
+    step3Badge.className = 'badge badge-amber';
+
+    const pct0 = Math.round((embedded / total) * 100);
+    body.innerHTML = `
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span id="progressText">${embedded} of ${total} vectorised</span>
+          <span id="progressPct">${pct0}%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill" style="width:${pct0}%"></div>
+        </div>
+      </div>
+      <div class="action-row">
+        <button class="btn-primary" id="embedBtn">Embed All Pending Facts</button>
+        <span class="inline-msg" id="embedMsg"></span>
+      </div>`;
+    document.getElementById('embedBtn').addEventListener('click', startEmbedding);
+  }
+
+  // ── Embedding via SSE ──
+  function startEmbedding() {
+    if (embedEventSource) embedEventSource.close();
+
+    const btn = document.getElementById('embedBtn');
+    const msg = document.getElementById('embedMsg');
+    btn.disabled = true;
+    msg.textContent = 'Embedding…';
+    msg.className = 'inline-msg';
+
+    const total = facts.length;
+    let doneCount = facts.filter(f => f.embeddingStatus === 'embedded').length;
+
+    embedEventSource = new EventSource(`/api/embed/${encodeURIComponent(currentUser)}`);
+
+    embedEventSource.onmessage = e => {
+      const data = JSON.parse(e.data);
+
+      if (data.error) {
+        embedEventSource.close();
+        if (msg) { msg.textContent = `Error: ${data.error}`; msg.className = 'inline-msg error'; }
+        if (btn) btn.disabled = false;
+        return;
+      }
+
+      if (data.done) {
+        embedEventSource.close();
+        if (msg) { msg.textContent = 'All facts are now vectorised. You can search below.'; msg.className = 'inline-msg success'; }
+        loadFacts();
+        return;
+      }
+      const badge = document.getElementById(`embed-badge-${data.factId}`);
+      if (badge) { badge.textContent = '✓ vectorised'; badge.className = 'embed-badge embed-done'; }
+
+      doneCount++;
+      const pct = Math.round((doneCount / total) * 100);
+      const fill = document.getElementById('progressFill');
+      const text = document.getElementById('progressText');
+      const pctEl = document.getElementById('progressPct');
+      if (fill)  fill.style.width = pct + '%';
+      if (text)  text.textContent = `${doneCount} of ${total} vectorised`;
+      if (pctEl) pctEl.textContent = pct + '%';
+    };
+
+    embedEventSource.onerror = () => {
+      embedEventSource.close();
+      if (msg) {
+        msg.textContent = 'Connection dropped. ';
+        msg.className = 'inline-msg error';
+        const retry = document.createElement('button');
+        retry.textContent = 'Retry';
+        retry.className = 'btn-secondary';
+        retry.style.marginLeft = '8px';
+        retry.onclick = () => { msg.textContent = ''; startEmbedding(); };
+        msg.appendChild(retry);
+      }
+    };
+  }
+
+  // ── Seed ──
+  document.getElementById('seedBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('seedBtn');
+    const msg = document.getElementById('seedMsg');
+    btn.disabled = true;
+    msg.innerHTML = '<span class="spinner"></span>';
+    msg.className = 'inline-msg';
+    try {
+      const res = await fetch('/api/seed', { method: 'POST' });
+      if (!res.ok) throw new Error((await res.json()).error);
+      msg.textContent = 'Seeded!';
+      msg.className = 'inline-msg success';
+      await loadFacts();
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'inline-msg error';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ── Cross-user banner ──
+  function updateCrossUserBanner() {
+    const target = document.getElementById('targetUserInput').value.trim() || currentUser;
+    const banner = document.getElementById('crossUserBanner');
+    const nameEl = document.getElementById('crossUserName');
+    const isCross = target && target !== currentUser;
+    banner.classList.toggle('visible', isCross);
+    if (isCross) nameEl.textContent = target;
+  }
+
+  document.getElementById('targetUserInput').addEventListener('input', () => {
+    updateCrossUserBanner();
+    resetResults();
+  });
+
+  // ── Search ──
+  document.getElementById('askBtn').addEventListener('click', runSearch);
+  document.getElementById('queryInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !document.getElementById('askBtn').disabled) runSearch();
+  });
+
+  async function runSearch() {
+    const query = document.getElementById('queryInput').value.trim();
+    if (!query) return;
+    const targetUserId = document.getElementById('targetUserInput').value.trim() || currentUser;
+
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('searchError').style.display = 'none';
+    document.getElementById('searchLoading').style.display = 'flex';
+    try {
+      const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser, query, targetUserId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      renderResults(data);
+    } catch (err) {
+      document.getElementById('searchError').textContent = err.message;
+      document.getElementById('searchError').style.display = 'block';
+    } finally {
+      document.getElementById('searchLoading').style.display = 'none';
+    }
+  }
+
+  function renderResults(data) {
+    const label = data.crossUser
+      ? `Public facts from ${data.targetUserId}'s stage`
+      : `Semantic matches from ${data.targetUserId}'s facts`;
+    document.getElementById('vectorSubtitle').textContent = label;
+
+    const cards   = document.getElementById('vectorCards');
+    const highSim = data.vectorResults.filter(r => r.similarity >= 0.5);
+
+    if (!highSim.length) {
+      cards.innerHTML = `<div class="empty-state">No strong matches found in ${data.targetUserId}'s data.</div>`;
+    } else {
+      cards.innerHTML = highSim.map(r => {
+        const pct = Math.round(r.similarity * 100);
+        const cls = pct >= 80 ? 'sim-high' : pct >= 60 ? 'sim-mid' : 'sim-low';
+        return `
+          <div class="vector-card">
+            <span class="sim-badge ${cls}">${pct}%</span>
+            <span class="vector-text">${escHtml(r.text)}</span>
+            <span class="cat-badge cat-${r.category}">${r.category}</span>
+          </div>`;
+      }).join('');
+    }
+
+    const note = data.crossUser
+      ? `This response is based only on what ${data.targetUserId} has made public.`
+      : `This response was generated only from ${data.targetUserId}'s own words.`;
+    document.getElementById('genieText').textContent = data.genieResponse;
+    document.getElementById('genieNote').textContent = note;
+    document.getElementById('searchResults').style.display = 'block';
+  }
+
+  function resetResults() {
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('searchError').style.display = 'none';
+    document.getElementById('queryInput').value = '';
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  loadFacts();
+</script>
+</body>
+</html>
